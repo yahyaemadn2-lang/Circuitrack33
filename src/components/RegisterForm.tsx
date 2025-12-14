@@ -84,7 +84,7 @@ export function RegisterForm({ lang }: RegisterFormProps) {
       setError(result.error);
       setIsLoading(false);
     } else {
-      navigate(`/${lang}/auth/login`, { replace: true });
+      navigate('/login', { replace: true });
     }
   };
 
@@ -215,7 +215,7 @@ export function RegisterForm({ lang }: RegisterFormProps) {
           <div className="text-center text-sm">
             <span className="text-gray-600">{t.haveAccount} </span>
             <Link
-              to={`/${lang}/auth/login`}
+              to="/login"
               className="font-medium text-green-600 hover:text-green-500 transition-colors"
             >
               {t.login}

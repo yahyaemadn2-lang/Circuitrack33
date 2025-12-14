@@ -53,14 +53,14 @@ export function LoginForm({ lang }: LoginFormProps) {
   useEffect(() => {
     if (user && profile) {
       if (profile.role === 'admin') {
-        navigate(`/${lang}/admin/dashboard`, { replace: true });
+        navigate('/dashboard/admin', { replace: true });
       } else if (profile.role === 'vendor') {
-        navigate(`/${lang}/vendor/dashboard`, { replace: true });
+        navigate('/dashboard/vendor', { replace: true });
       } else {
-        navigate(`/${lang}/buyer/dashboard`, { replace: true });
+        navigate('/dashboard/buyer', { replace: true });
       }
     }
-  }, [user, profile, lang, navigate]);
+  }, [user, profile, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -147,7 +147,7 @@ export function LoginForm({ lang }: LoginFormProps) {
           <div className="text-center text-sm">
             <span className="text-gray-600">{t.noAccount} </span>
             <Link
-              to={`/${lang}/auth/register`}
+              to="/register"
               className="font-medium text-blue-600 hover:text-blue-500 transition-colors"
             >
               {t.register}

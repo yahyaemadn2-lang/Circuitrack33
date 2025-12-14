@@ -1,4 +1,4 @@
-import { Navigate, useLocation } from 'react-router-dom';
+import { Navigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
 interface ProtectedRouteProps {
@@ -8,8 +8,6 @@ interface ProtectedRouteProps {
 
 export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) {
   const { user, profile, loading } = useAuth();
-  const location = useLocation();
-  const lang = location.pathname.split('/')[1] || 'en';
 
   if (loading) {
     return (
@@ -23,16 +21,16 @@ export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) 
   }
 
   if (!user) {
-    return <Navigate to={`/${lang}/auth/login`} replace />;
+    return <Navigate to="/login" replace />;
   }
 
   if (user && profile && requiredRole && profile.role !== requiredRole) {
     if (profile.role === 'admin') {
-      return <Navigate to={`/${lang}/admin`} replace />;
+      return <Navigate to="/dashboard/admin" replace />;
     } else if (profile.role === 'vendor') {
-      return <Navigate to={`/${lang}/vendor/dashboard`} replace />;
+      return <Navigate to="/dashboard/vendor" replace />;
     } else {
-      return <Navigate to={`/${lang}/buyer/dashboard`} replace />;
+      return <Navigate to="/dashboard/buyer" replace />;
     }
   }
 
