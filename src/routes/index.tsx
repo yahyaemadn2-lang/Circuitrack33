@@ -1,6 +1,8 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { ProtectedRoute } from '../components/ProtectedRoute';
+import DashboardLayout from '../components/DashboardLayout';
 
+import Home from '../pages/Home';
 import Login from '../pages/Login';
 import Register from '../pages/Register';
 import Products from '../pages/Products';
@@ -14,7 +16,7 @@ import AdminDashboard from '../pages/AdminDashboard';
 export default function AppRoutes() {
   return (
     <Routes>
-      <Route path="/" element={<Navigate to="/products" replace />} />
+      <Route path="/" element={<Home />} />
 
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
@@ -29,7 +31,9 @@ export default function AppRoutes() {
         path="/dashboard/buyer"
         element={
           <ProtectedRoute requiredRole="buyer">
-            <BuyerDashboard />
+            <DashboardLayout>
+              <BuyerDashboard />
+            </DashboardLayout>
           </ProtectedRoute>
         }
       />
@@ -38,7 +42,9 @@ export default function AppRoutes() {
         path="/dashboard/vendor"
         element={
           <ProtectedRoute requiredRole="vendor">
-            <VendorDashboard />
+            <DashboardLayout>
+              <VendorDashboard />
+            </DashboardLayout>
           </ProtectedRoute>
         }
       />
@@ -47,12 +53,14 @@ export default function AppRoutes() {
         path="/dashboard/admin"
         element={
           <ProtectedRoute requiredRole="admin">
-            <AdminDashboard />
+            <DashboardLayout>
+              <AdminDashboard />
+            </DashboardLayout>
           </ProtectedRoute>
         }
       />
 
-      <Route path="*" element={<Navigate to="/products" replace />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 }

@@ -8,10 +8,10 @@ export default function Navbar() {
   const { itemCount } = useCart();
 
   const getDashboardPath = () => {
-    if (!profile) return '/en/auth/login';
-    if (profile.role === 'admin') return '/en/admin/dashboard';
-    if (profile.role === 'vendor') return '/en/vendor/dashboard';
-    return '/en/buyer/dashboard';
+    if (!profile) return '/login';
+    if (profile.role === 'admin') return '/dashboard/admin';
+    if (profile.role === 'vendor') return '/dashboard/vendor';
+    return '/dashboard/buyer';
   };
 
   return (
