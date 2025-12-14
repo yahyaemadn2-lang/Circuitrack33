@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { UserPlus, Mail, Lock, AlertCircle, ShoppingCart, Store } from 'lucide-react';
@@ -62,10 +62,22 @@ export function RegisterForm({ lang }: RegisterFormProps) {
   const [role, setRole] = useState<'buyer' | 'vendor'>('buyer');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { register } = useAuth();
+  const { register, user, profile, login } = useAuth();
   const navigate = useNavigate();
 
   const t = translations[lang as keyof typeof translations] || translations.en;
+
+  useEffect(() => {
+    if (user && profile) {
+      if (profile.role === 'admin') {
+        navigate('/dashboard/admin', { replace: true });
+      } else if (profile.role === 'vendor') {
+        navigate('/dashboard/vendor', { replace: true });
+      } else {
+        navigate('/dashboard/buyer', { replace: true });
+      }
+    }
+  }, [user, profile, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -83,12 +95,16 @@ export function RegisterForm({ lang }: RegisterFormProps) {
 
       if (result.error) {
         setError(result.error);
+        setIsLoading(false);
       } else {
-        navigate('/login', { replace: true });
+        const loginResult = await login(email, password);
+        if (loginResult.error) {
+          setError(loginResult.error);
+          setIsLoading(false);
+        }
       }
     } catch (err: any) {
       setError(err.message || 'An unexpected error occurred');
-    } finally {
       setIsLoading(false);
     }
   };
