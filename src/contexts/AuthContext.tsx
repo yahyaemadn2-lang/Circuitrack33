@@ -61,10 +61,45 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .eq('id', userId)
         .maybeSingle();
 
-      if (error) throw error;
-      setProfile(data);
+      if (error) {
+        console.error('Error fetching user profile:', error);
+        throw error;
+      }
+
+      if (!data) {
+        const authUser = await supabase.auth.getUser();
+        if (authUser.data.user) {
+          const { data: newProfile, error: insertError } = await supabase
+            .from('users')
+            .insert({
+              id: userId,
+              email: authUser.data.user.email || '',
+              role: 'buyer',
+              password_hash: '',
+            })
+            .select()
+            .single();
+
+          if (insertError) {
+            console.error('Error creating user profile:', insertError);
+            throw insertError;
+          }
+
+          setProfile(newProfile);
+
+          const { error: walletError } = await supabase
+            .from('wallets')
+            .insert({ user_id: userId });
+
+          if (walletError) {
+            console.error('Wallet creation failed:', walletError);
+          }
+        }
+      } else {
+        setProfile(data);
+      }
     } catch (error) {
-      console.error('Error fetching user profile:', error);
+      console.error('Error in fetchUserProfile:', error);
       setProfile(null);
     } finally {
       setLoading(false);

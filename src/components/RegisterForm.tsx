@@ -78,13 +78,18 @@ export function RegisterForm({ lang }: RegisterFormProps) {
 
     setIsLoading(true);
 
-    const result = await register(email, password, role);
+    try {
+      const result = await register(email, password, role);
 
-    if (result.error) {
-      setError(result.error);
+      if (result.error) {
+        setError(result.error);
+      } else {
+        navigate('/login', { replace: true });
+      }
+    } catch (err: any) {
+      setError(err.message || 'An unexpected error occurred');
+    } finally {
       setIsLoading(false);
-    } else {
-      navigate('/login', { replace: true });
     }
   };
 

@@ -67,10 +67,15 @@ export function LoginForm({ lang }: LoginFormProps) {
     setError('');
     setIsLoading(true);
 
-    const result = await login(email, password);
+    try {
+      const result = await login(email, password);
 
-    if (result.error) {
-      setError(result.error);
+      if (result.error) {
+        setError(result.error);
+      }
+    } catch (err: any) {
+      setError(err.message || 'An unexpected error occurred');
+    } finally {
       setIsLoading(false);
     }
   };
