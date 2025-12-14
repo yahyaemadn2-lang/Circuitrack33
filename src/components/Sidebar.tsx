@@ -1,17 +1,17 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import {
-  LayoutDashboard,
   ShoppingBag,
   Heart,
   Package,
   Bell,
   Users,
-  ShoppingCart,
   TrendingUp,
   Settings,
-  Box,
+  Server,
   ListOrdered,
+  Wallet,
+  Tag,
 } from 'lucide-react';
 
 export default function Sidebar() {
@@ -21,23 +21,27 @@ export default function Sidebar() {
   const isActive = (path: string) => location.pathname === path;
 
   const buyerLinks = [
-    { path: '/dashboard/buyer', label: 'Overview', icon: LayoutDashboard },
-    { path: '/products', label: 'Browse Products', icon: ShoppingBag },
-    { path: '/cart', label: 'Shopping Cart', icon: ShoppingCart },
+    { path: '/dashboard/buyer', label: 'Orders', icon: ListOrdered },
+    { path: '/dashboard/buyer', label: 'Wishlist', icon: Heart },
+    { path: '/dashboard/buyer', label: 'Wallet', icon: Wallet },
+    { path: '/dashboard/buyer', label: 'Notifications', icon: Bell },
+    { path: '/dashboard/buyer', label: 'Settings', icon: Settings },
   ];
 
   const vendorLinks = [
-    { path: '/dashboard/vendor', label: 'Overview', icon: LayoutDashboard },
     { path: '/dashboard/vendor', label: 'Products', icon: Package },
     { path: '/dashboard/vendor', label: 'Orders', icon: ListOrdered },
+    { path: '/dashboard/vendor', label: 'Offers', icon: Tag },
+    { path: '/dashboard/vendor', label: 'Analytics', icon: TrendingUp },
+    { path: '/dashboard/vendor', label: 'Settings', icon: Settings },
   ];
 
   const adminLinks = [
-    { path: '/dashboard/admin', label: 'Overview', icon: LayoutDashboard },
     { path: '/dashboard/admin', label: 'Users', icon: Users },
-    { path: '/dashboard/admin', label: 'Vendors', icon: Box },
+    { path: '/dashboard/admin', label: 'Vendors', icon: ShoppingBag },
     { path: '/dashboard/admin', label: 'Products', icon: Package },
-    { path: '/dashboard/admin', label: 'Analytics', icon: TrendingUp },
+    { path: '/dashboard/admin', label: 'Orders', icon: ListOrdered },
+    { path: '/dashboard/admin', label: 'System', icon: Server },
   ];
 
   const getLinks = () => {
