@@ -13,6 +13,7 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import { useCart } from '../../contexts/CartContext';
 import * as productsService from '../../modules/products/products.service';
 import * as favoritesService from '../../modules/favorites/favorites.service';
 import { supabase } from '../../lib/supabaseClient';
@@ -53,6 +54,7 @@ export default function ProductDetails() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { addItem } = useCart();
 
   const [product, setProduct] = useState<Product | null>(null);
   const [vendor, setVendor] = useState<Vendor | null>(null);
@@ -143,29 +145,11 @@ export default function ProductDetails() {
       return;
     }
 
+    if (!id) return;
+
     try {
       setAddingToCart(true);
-
-      const { data: cartData } = await supabase
-        .from('cart_items')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('product_id', id)
-        .maybeSingle();
-
-      if (cartData) {
-        await supabase
-          .from('cart_items')
-          .update({ quantity: cartData.quantity + quantity })
-          .eq('id', cartData.id);
-      } else {
-        await supabase.from('cart_items').insert({
-          user_id: user.id,
-          product_id: id,
-          quantity,
-        });
-      }
-
+      await addItem(id, quantity);
       setCartSuccess(true);
       setTimeout(() => setCartSuccess(false), 3000);
     } catch (err: any) {

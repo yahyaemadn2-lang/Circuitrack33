@@ -6,6 +6,7 @@ import Register from '../pages/Register';
 import Products from '../pages/Products';
 import ProductDetails from '../pages/ProductDetails';
 import Cart from '../pages/Cart';
+import Checkout from '../pages/Checkout';
 import BuyerDashboard from '../pages/BuyerDashboard';
 import VendorDashboard from '../pages/VendorDashboard';
 import AdminDashboard from '../pages/AdminDashboard';
@@ -22,6 +23,7 @@ export default function AppRoutes() {
       <Route path="/products/:id" element={<ProductDetails />} />
 
       <Route path="/cart" element={<Cart />} />
+      <Route path="/checkout" element={<Checkout />} />
 
       <Route
         path="/dashboard/buyer"

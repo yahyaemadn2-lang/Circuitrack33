@@ -1,9 +1,11 @@
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { LogOut, User } from 'lucide-react';
+import { useCart } from '../contexts/CartContext';
+import { LogOut, User, ShoppingCart } from 'lucide-react';
 
 export default function Navbar() {
   const { user, profile, logout } = useAuth();
+  const { itemCount } = useCart();
 
   const getDashboardPath = () => {
     if (!profile) return '/en/auth/login';
@@ -21,6 +23,19 @@ export default function Navbar() {
           </Link>
 
           <div className="flex items-center gap-4">
+            <Link to="/products" className="text-sm text-gray-700 hover:text-gray-900">
+              Products
+            </Link>
+
+            <Link to="/cart" className="relative p-2 text-gray-700 hover:text-gray-900">
+              <ShoppingCart className="w-5 h-5" />
+              {itemCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-blue-600 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                  {itemCount}
+                </span>
+              )}
+            </Link>
+
             {user && profile ? (
               <>
                 <Link
@@ -45,12 +60,20 @@ export default function Navbar() {
                 </button>
               </>
             ) : (
-              <Link
-                to="/en/auth/login"
-                className="px-4 py-2 text-sm text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
-              >
-                Login
-              </Link>
+              <>
+                <Link
+                  to="/login"
+                  className="text-sm text-gray-700 hover:text-gray-900"
+                >
+                  Login
+                </Link>
+                <Link
+                  to="/register"
+                  className="px-4 py-2 text-sm text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
+                >
+                  Sign Up
+                </Link>
+              </>
             )}
           </div>
         </div>
