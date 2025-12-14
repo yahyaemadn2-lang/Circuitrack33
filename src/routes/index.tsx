@@ -4,7 +4,7 @@ import { ProtectedRoute } from '../components/ProtectedRoute';
 import Login from '../pages/Login';
 import Register from '../pages/Register';
 import Products from '../pages/Products';
-import ProductDetail from '../pages/ProductDetail';
+import ProductDetails from '../pages/ProductDetails';
 import Cart from '../pages/Cart';
 import BuyerDashboard from '../pages/BuyerDashboard';
 import VendorDashboard from '../pages/VendorDashboard';
@@ -19,7 +19,7 @@ export default function AppRoutes() {
       <Route path="/register" element={<Register />} />
 
       <Route path="/products" element={<Products />} />
-      <Route path="/products/:id" element={<ProductDetail />} />
+      <Route path="/products/:id" element={<ProductDetails />} />
 
       <Route path="/cart" element={<Cart />} />
 
