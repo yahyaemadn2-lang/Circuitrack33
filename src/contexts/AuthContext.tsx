@@ -33,7 +33,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
-        fetchUserProfile(session.user.id);
+        loadUserProfile(session.user);
       } else {
         setLoading(false);
       }
@@ -43,7 +43,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
-        fetchUserProfile(session.user.id);
+        loadUserProfile(session.user);
       } else {
         setProfile(null);
         setLoading(false);
@@ -53,53 +53,47 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
-  const fetchUserProfile = async (userId: string) => {
+  const loadUserProfile = async (authUser: User) => {
     try {
-      const { data, error } = await supabase
+      const { data: existingProfile, error: fetchError } = await supabase
         .from('users')
         .select('*')
-        .eq('id', userId)
+        .eq('id', authUser.id)
         .maybeSingle();
 
-      if (error) {
-        console.error('Error fetching user profile:', error);
-        throw error;
+      if (fetchError && fetchError.code !== 'PGRST116') {
+        console.error('Error fetching user profile:', fetchError);
+        setProfile(null);
+        setLoading(false);
+        return;
       }
 
-      if (!data) {
-        const authUser = await supabase.auth.getUser();
-        if (authUser.data.user) {
-          const { data: newProfile, error: insertError } = await supabase
-            .from('users')
-            .insert({
-              id: userId,
-              email: authUser.data.user.email || '',
-              role: 'buyer',
-              password_hash: '',
-            })
-            .select()
-            .single();
+      if (existingProfile) {
+        setProfile(existingProfile);
+        setLoading(false);
+        return;
+      }
 
-          if (insertError) {
-            console.error('Error creating user profile:', insertError);
-            throw insertError;
-          }
+      const roleFromMetadata = authUser.user_metadata?.role || 'buyer';
 
-          setProfile(newProfile);
+      const { data: newProfile, error: insertError } = await supabase
+        .from('users')
+        .insert({
+          id: authUser.id,
+          email: authUser.email || '',
+          role: roleFromMetadata,
+        })
+        .select()
+        .single();
 
-          const { error: walletError } = await supabase
-            .from('wallets')
-            .insert({ user_id: userId });
-
-          if (walletError) {
-            console.error('Wallet creation failed:', walletError);
-          }
-        }
+      if (insertError) {
+        console.error('Error creating user profile:', insertError);
+        setProfile(null);
       } else {
-        setProfile(data);
+        setProfile(newProfile);
       }
     } catch (error) {
-      console.error('Error in fetchUserProfile:', error);
+      console.error('Unexpected error in loadUserProfile:', error);
       setProfile(null);
     } finally {
       setLoading(false);
@@ -108,15 +102,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = async (email: string, password: string) => {
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
-      if (error) throw error;
-
-      if (data.user) {
-        await fetchUserProfile(data.user.id);
+      if (error) {
+        return { error: error.message };
       }
 
       return {};
@@ -130,50 +122,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
+        options: {
+          data: {
+            role: role,
+          },
+        },
       });
 
-      if (authError) throw authError;
+      if (authError) {
+        return { error: authError.message };
+      }
 
       if (!authData.user) {
-        throw new Error('Registration failed');
+        return { error: 'Registration failed' };
       }
-
-      const { error: profileError } = await supabase
-        .from('users')
-        .insert([
-          {
-            id: authData.user.id,
-            email: authData.user.email,
-            role: role,
-            password_hash: '',
-          },
-        ]);
-
-      if (profileError) throw profileError;
-
-      if (role === 'vendor') {
-        const { error: vendorError } = await supabase
-          .from('vendors')
-          .insert([
-            {
-              user_id: authData.user.id,
-              display_name: email.split('@')[0],
-              status: 'pending',
-            },
-          ]);
-
-        if (vendorError) throw vendorError;
-      }
-
-      const { error: walletError } = await supabase
-        .from('wallets')
-        .insert([
-          {
-            user_id: authData.user.id,
-          },
-        ]);
-
-      if (walletError) console.error('Wallet creation failed:', walletError);
 
       return {};
     } catch (error: any) {
