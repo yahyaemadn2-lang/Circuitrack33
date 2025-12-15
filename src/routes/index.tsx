@@ -11,6 +11,7 @@ import Cart from '../pages/Cart';
 import Checkout from '../pages/Checkout';
 import OrderDetails from '../pages/OrderDetails';
 import BuyerDashboard from '../pages/BuyerDashboard';
+import BuyerWallet from '../pages/BuyerWallet';
 import VendorDashboard from '../pages/VendorDashboard';
 import AdminDashboard from '../pages/AdminDashboard';
 
@@ -50,6 +51,14 @@ export default function AppRoutes() {
         element={
           <ProtectedRoute requiredRole="buyer">
             <OrderDetails />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/dashboard/buyer/wallet"
+        element={
+          <ProtectedRoute requiredRole="buyer">
+            <BuyerWallet />
           </ProtectedRoute>
         }
       />

@@ -108,7 +108,10 @@ export default function Checkout() {
       await clearCart();
 
       navigate(`/dashboard/buyer/orders/${result.order.id}`, {
-        state: { orderPlaced: true },
+        state: {
+          orderPlaced: true,
+          cashbackAmount: result.cashbackAmount,
+        },
       });
     } catch (err: any) {
       console.error('Error placing order:', err);

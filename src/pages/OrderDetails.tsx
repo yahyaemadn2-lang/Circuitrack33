@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation, Link } from 'react-router-dom';
-import { Package, ArrowLeft, CheckCircle, Clock, Truck, XCircle } from 'lucide-react';
+import { Package, ArrowLeft, CheckCircle, Clock, Truck, XCircle, Gift } from 'lucide-react';
 import { getOrderById } from '../modules/orders/orders.service';
 import { OrderWithItems } from '../modules/orders/orders.schema';
 import { useAuth } from '../contexts/AuthContext';
@@ -17,6 +17,7 @@ export default function OrderDetails() {
   const [error, setError] = useState<string | null>(null);
 
   const orderPlaced = location.state?.orderPlaced;
+  const cashbackAmount = location.state?.cashbackAmount;
 
   useEffect(() => {
     if (!user || !isBuyer) {
@@ -139,15 +140,29 @@ export default function OrderDetails() {
         </div>
 
         {orderPlaced && (
-          <div className="p-4 bg-green-50 border border-green-200 rounded-lg flex items-start gap-3">
-            <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
-            <div>
-              <p className="font-medium text-green-900">Order placed successfully!</p>
-              <p className="text-sm text-green-700 mt-1">
-                Your order has been received and is being processed. You will receive updates on
-                your order status.
-              </p>
+          <div className="space-y-3">
+            <div className="p-4 bg-green-50 border border-green-200 rounded-lg flex items-start gap-3">
+              <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="font-medium text-green-900">Order placed successfully!</p>
+                <p className="text-sm text-green-700 mt-1">
+                  Your order has been received and is being processed. You will receive updates on
+                  your order status.
+                </p>
+              </div>
             </div>
+            {cashbackAmount && cashbackAmount > 0 && (
+              <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg flex items-start gap-3">
+                <Gift className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-medium text-blue-900">Cashback Earned!</p>
+                  <p className="text-sm text-blue-700 mt-1">
+                    You've earned EGP {cashbackAmount.toFixed(2)} cashback on this order. The
+                    cashback has been added to your wallet.
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
         )}
 

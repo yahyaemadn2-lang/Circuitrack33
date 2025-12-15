@@ -141,3 +141,86 @@ export async function creditWallet(
 
   return { wallet, transaction };
 }
+
+export async function applyCashback(
+  walletId: string,
+  amount: number,
+  referenceId?: string
+): Promise<{ wallet: Wallet; transaction: WalletTransaction }> {
+  if (amount <= 0) {
+    throw new Error('Cashback amount must be positive');
+  }
+
+  const transaction = await createWalletTransaction({
+    wallet_id: walletId,
+    type: 'cashback',
+    amount: amount,
+    reference_id: referenceId,
+    reference_type: 'cashback',
+  });
+
+  const wallet = await updateWalletBalance(walletId, amount, 'cashback');
+
+  return { wallet, transaction };
+}
+
+export async function getWalletTransactionsByUserId(
+  userId: string,
+  limit?: number
+): Promise<WalletTransaction[]> {
+  const wallet = await getWalletByUserId(userId);
+
+  if (!wallet) {
+    return [];
+  }
+
+  let query = supabase
+    .from('wallet_transactions')
+    .select('*')
+    .eq('wallet_id', wallet.id)
+    .order('created_at', { ascending: false });
+
+  if (limit) {
+    query = query.limit(limit);
+  }
+
+  const { data, error } = await query;
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return data as WalletTransaction[];
+}
+
+export async function getAllWallets(): Promise<Wallet[]> {
+  const { data, error } = await supabase
+    .from('wallets')
+    .select('*')
+    .order('main_balance', { ascending: false });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return data as Wallet[];
+}
+
+export async function getAllWalletTransactions(limit?: number): Promise<WalletTransaction[]> {
+  let query = supabase
+    .from('wallet_transactions')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (limit) {
+    query = query.limit(limit);
+  }
+
+  const { data, error } = await query;
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return data as WalletTransaction[];
+}

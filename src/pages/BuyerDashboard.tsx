@@ -344,6 +344,15 @@ export default function BuyerDashboard() {
                         <span className="font-medium text-gray-900">View Cart</span>
                       </div>
                     </Link>
+                    <Link
+                      to="/dashboard/buyer/wallet"
+                      className="block w-full p-4 border border-gray-200 rounded-lg hover:border-blue-600 hover:bg-blue-50 transition-colors"
+                    >
+                      <div className="flex items-center gap-3">
+                        <Wallet className="w-5 h-5 text-blue-600" />
+                        <span className="font-medium text-gray-900">My Wallet</span>
+                      </div>
+                    </Link>
                     <button
                       onClick={() => setActiveTab('wishlist')}
                       className="block w-full p-4 border border-gray-200 rounded-lg hover:border-blue-600 hover:bg-blue-50 transition-colors text-left"

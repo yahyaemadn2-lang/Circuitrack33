@@ -7,7 +7,8 @@ import {
   CreateOrderItemInput,
   OrderItem,
 } from './orders.schema';
-import { debitWallet, getWalletByUserId } from '../wallet/wallet.service';
+import { debitWallet, getWalletByUserId, applyCashback } from '../wallet/wallet.service';
+import { calculateCashback } from '../wallet/cashback';
 
 export async function getAllOrders(): Promise<Order[]> {
   const { data, error } = await supabase
@@ -135,6 +136,8 @@ export interface PlaceOrderResult {
   order: Order;
   orderItems: OrderItem[];
   walletTransactionId: string;
+  cashbackAmount?: number;
+  cashbackTransactionId?: string;
 }
 
 export async function placeOrder(
@@ -176,9 +179,27 @@ export async function placeOrder(
     'order'
   );
 
+  const cashbackAmount = calculateCashback(input.subtotal);
+  let cashbackTransactionId: string | undefined;
+
+  if (cashbackAmount > 0) {
+    try {
+      const { transaction: cashbackTransaction } = await applyCashback(
+        wallet.id,
+        cashbackAmount,
+        order.id
+      );
+      cashbackTransactionId = cashbackTransaction.id;
+    } catch (error) {
+      console.error('Failed to apply cashback:', error);
+    }
+  }
+
   return {
     order,
     orderItems,
     walletTransactionId: transaction.id,
+    cashbackAmount,
+    cashbackTransactionId,
   };
 }

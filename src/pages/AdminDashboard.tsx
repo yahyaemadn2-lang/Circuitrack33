@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabaseClient';
+import { getAllWallets, getAllWalletTransactions } from '../modules/wallet/wallet.service';
+import { Wallet, WalletTransaction } from '../modules/wallet/wallet.schema';
 import {
   Users,
   Package,
@@ -12,6 +14,8 @@ import {
   XCircle,
   Eye,
   Ban,
+  Wallet as WalletIcon,
+  Gift,
 } from 'lucide-react';
 
 interface User {
@@ -63,6 +67,8 @@ interface Stats {
   pendingVendors: number;
   activeVendors: number;
   activeBuyers: number;
+  totalWalletBalance: number;
+  totalCashbackGiven: number;
 }
 
 export default function AdminDashboard() {
@@ -71,6 +77,8 @@ export default function AdminDashboard() {
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
+  const [wallets, setWallets] = useState<Wallet[]>([]);
+  const [walletTransactions, setWalletTransactions] = useState<WalletTransaction[]>([]);
   const [stats, setStats] = useState<Stats>({
     totalUsers: 0,
     totalVendors: 0,
@@ -80,10 +88,12 @@ export default function AdminDashboard() {
     pendingVendors: 0,
     activeVendors: 0,
     activeBuyers: 0,
+    totalWalletBalance: 0,
+    totalCashbackGiven: 0,
   });
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<
-    'overview' | 'users' | 'vendors' | 'products'
+    'overview' | 'users' | 'vendors' | 'products' | 'wallets'
   >('overview');
 
   useEffect(() => {
@@ -96,56 +106,66 @@ export default function AdminDashboard() {
     try {
       setLoading(true);
 
-      const [usersData, vendorsData, productsData, ordersData] = await Promise.all([
-        supabase
-          .from('users')
-          .select('*')
-          .order('created_at', { ascending: false }),
-        supabase
-          .from('vendors')
-          .select(`
+      const [usersData, vendorsData, productsData, ordersData, walletsData, transactionsData] =
+        await Promise.all([
+          supabase.from('users').select('*').order('created_at', { ascending: false }),
+          supabase
+            .from('vendors')
+            .select(
+              `
             *,
             user:users (
               email
             )
-          `)
-          .order('created_at', { ascending: false }),
-        supabase
-          .from('products')
-          .select(`
+          `
+            )
+            .order('created_at', { ascending: false }),
+          supabase
+            .from('products')
+            .select(
+              `
             *,
             vendor:vendors (
               display_name
             )
-          `)
-          .order('created_at', { ascending: false }),
-        supabase
-          .from('orders')
-          .select('id, total_amount, status, created_at')
-          .order('created_at', { ascending: false }),
-      ]);
+          `
+            )
+            .order('created_at', { ascending: false }),
+          supabase
+            .from('orders')
+            .select('id, subtotal, status, created_at')
+            .order('created_at', { ascending: false }),
+          getAllWallets(),
+          getAllWalletTransactions(10),
+        ]);
 
       if (usersData.data) setUsers(usersData.data);
       if (vendorsData.data) setVendors(vendorsData.data as any);
       if (productsData.data) setProducts(productsData.data as any);
-      if (ordersData.data) setOrders(ordersData.data);
+      if (ordersData.data) setOrders(ordersData.data as any);
+      setWallets(walletsData);
+      setWalletTransactions(transactionsData);
 
-      const totalRevenue = ordersData.data?.reduce(
-        (sum, order) => sum + Number(order.total_amount),
+      const totalRevenue =
+        ordersData.data?.reduce((sum, order) => sum + Number(order.subtotal), 0) || 0;
+
+      const pendingVendors =
+        vendorsData.data?.filter((v) => v.status === 'pending').length || 0;
+
+      const activeVendors =
+        vendorsData.data?.filter((v) => v.status === 'active').length || 0;
+
+      const activeBuyers = usersData.data?.filter((u) => u.role === 'buyer').length || 0;
+
+      const totalWalletBalance = walletsData.reduce(
+        (sum, wallet) => sum + Number(wallet.main_balance),
         0
-      ) || 0;
+      );
 
-      const pendingVendors = vendorsData.data?.filter(
-        (v) => v.status === 'pending'
-      ).length || 0;
-
-      const activeVendors = vendorsData.data?.filter(
-        (v) => v.status === 'active'
-      ).length || 0;
-
-      const activeBuyers = usersData.data?.filter(
-        (u) => u.role === 'buyer'
-      ).length || 0;
+      const totalCashbackGiven = walletsData.reduce(
+        (sum, wallet) => sum + Number(wallet.cashback_balance),
+        0
+      );
 
       setStats({
         totalUsers: usersData.data?.length || 0,
@@ -156,6 +176,8 @@ export default function AdminDashboard() {
         pendingVendors,
         activeVendors,
         activeBuyers,
+        totalWalletBalance,
+        totalCashbackGiven,
       });
     } catch (error) {
       console.error('Error loading dashboard data:', error);
@@ -338,6 +360,16 @@ export default function AdminDashboard() {
               >
                 Products ({stats.totalProducts})
               </button>
+              <button
+                onClick={() => setActiveTab('wallets')}
+                className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors ${
+                  activeTab === 'wallets'
+                    ? 'border-blue-600 text-blue-600'
+                    : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
+                }`}
+              >
+                Wallets
+              </button>
             </nav>
           </div>
 
@@ -386,6 +418,30 @@ export default function AdminDashboard() {
                           </span>
                         </div>
                       ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <h2 className="text-xl font-bold text-gray-900 mb-4">Wallet Overview</h2>
+                    <div className="space-y-3">
+                      <div className="p-4 bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg border border-blue-200">
+                        <div className="flex items-center gap-3 mb-2">
+                          <WalletIcon className="w-5 h-5 text-blue-600" />
+                          <span className="text-sm text-gray-600">Total Main Balance</span>
+                        </div>
+                        <p className="text-2xl font-bold text-gray-900">
+                          EGP {stats.totalWalletBalance.toLocaleString()}
+                        </p>
+                      </div>
+                      <div className="p-4 bg-gradient-to-r from-green-50 to-green-100 rounded-lg border border-green-200">
+                        <div className="flex items-center gap-3 mb-2">
+                          <Gift className="w-5 h-5 text-green-600" />
+                          <span className="text-sm text-gray-600">Total Cashback Given</span>
+                        </div>
+                        <p className="text-2xl font-bold text-gray-900">
+                          EGP {stats.totalCashbackGiven.toLocaleString()}
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -626,6 +682,123 @@ export default function AdminDashboard() {
                       </button>
                     </div>
                   ))}
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'wallets' && (
+              <div className="space-y-6">
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900 mb-4">Wallet Statistics</h2>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg shadow-lg p-6 text-white">
+                      <div className="flex items-center justify-between mb-4">
+                        <WalletIcon className="w-8 h-8 opacity-80" />
+                        <span className="text-sm opacity-80">Platform</span>
+                      </div>
+                      <h3 className="text-3xl font-bold mb-1">
+                        EGP {stats.totalWalletBalance.toLocaleString()}
+                      </h3>
+                      <p className="text-sm opacity-80">Total Main Balance</p>
+                    </div>
+
+                    <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-lg shadow-lg p-6 text-white">
+                      <div className="flex items-center justify-between mb-4">
+                        <Gift className="w-8 h-8 opacity-80" />
+                        <span className="text-sm opacity-80">Rewards</span>
+                      </div>
+                      <h3 className="text-3xl font-bold mb-1">
+                        EGP {stats.totalCashbackGiven.toLocaleString()}
+                      </h3>
+                      <p className="text-sm opacity-80">Total Cashback Given</p>
+                    </div>
+
+                    <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg shadow-lg p-6 text-white">
+                      <div className="flex items-center justify-between mb-4">
+                        <Users className="w-8 h-8 opacity-80" />
+                        <span className="text-sm opacity-80">Users</span>
+                      </div>
+                      <h3 className="text-3xl font-bold mb-1">{wallets.length}</h3>
+                      <p className="text-sm opacity-80">Active Wallets</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900 mb-4">
+                    Recent Wallet Transactions
+                  </h2>
+                  <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead className="bg-gray-50 border-b border-gray-200">
+                          <tr>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Date
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Wallet ID
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Type
+                            </th>
+                            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Amount
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                          {walletTransactions.length === 0 ? (
+                            <tr>
+                              <td colSpan={4} className="px-6 py-8 text-center text-gray-600">
+                                No transactions yet
+                              </td>
+                            </tr>
+                          ) : (
+                            walletTransactions.map((transaction) => (
+                              <tr key={transaction.id} className="hover:bg-gray-50">
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                  {new Date(transaction.created_at).toLocaleDateString('en-US', {
+                                    year: 'numeric',
+                                    month: 'short',
+                                    day: 'numeric',
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                  })}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 font-mono">
+                                  {transaction.wallet_id.slice(0, 8)}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  <span
+                                    className={`px-2 py-1 text-xs font-medium rounded capitalize ${
+                                      transaction.type === 'credit'
+                                        ? 'bg-green-100 text-green-800'
+                                        : transaction.type === 'debit'
+                                        ? 'bg-red-100 text-red-800'
+                                        : transaction.type === 'cashback'
+                                        ? 'bg-blue-100 text-blue-800'
+                                        : 'bg-orange-100 text-orange-800'
+                                    }`}
+                                  >
+                                    {transaction.type}
+                                  </span>
+                                </td>
+                                <td
+                                  className={`px-6 py-4 whitespace-nowrap text-right text-sm font-semibold ${
+                                    transaction.amount >= 0 ? 'text-green-600' : 'text-red-600'
+                                  }`}
+                                >
+                                  {transaction.amount >= 0 ? '+' : ''}
+                                  EGP {transaction.amount.toLocaleString()}
+                                </td>
+                              </tr>
+                            ))
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
