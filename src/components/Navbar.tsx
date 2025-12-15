@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useCart } from '../contexts/CartContext';
-import { LogOut, User, ShoppingCart } from 'lucide-react';
+import { LogOut, User, ShoppingCart, Zap } from 'lucide-react';
 
 export default function Navbar() {
   const { user, profile, logout } = useAuth();
@@ -18,8 +18,15 @@ export default function Navbar() {
     <nav className="bg-white border-b border-gray-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          <Link to="/" className="text-xl font-bold text-gray-900">
-            CircuitRack
+          <Link
+            to="/"
+            className="flex items-center gap-2 text-xl font-bold text-gray-900 hover:text-blue-600 transition-colors"
+            aria-label="CircuitRack Home"
+          >
+            <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg flex items-center justify-center shadow-md">
+              <Zap className="w-5 h-5 text-white" fill="white" />
+            </div>
+            <span>CircuitRack</span>
           </Link>
 
           <div className="flex items-center gap-4">

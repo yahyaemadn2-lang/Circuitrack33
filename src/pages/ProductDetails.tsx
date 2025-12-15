@@ -14,7 +14,6 @@ import { getProductById, getRelatedProducts } from '../modules/products/products
 import { ProductWithRelations } from '../modules/products/products.schema';
 import { useAuth } from '../contexts/AuthContext';
 import { useCart } from '../contexts/CartContext';
-import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 
 export default function ProductDetails() {
@@ -114,7 +113,6 @@ export default function ProductDetails() {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <Navbar />
         <ProductDetailsSkeleton />
         <Footer />
       </div>
@@ -124,7 +122,6 @@ export default function ProductDetails() {
   if (error || !product) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <Navbar />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
           <div className="text-center">
             <div className="inline-block p-4 bg-red-50 rounded-lg mb-4">
@@ -153,8 +150,6 @@ export default function ProductDetails() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navbar />
-
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <button
           onClick={() => navigate('/products')}

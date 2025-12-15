@@ -6,7 +6,6 @@ import { getAllCategories } from '../modules/categories/categories.service';
 import { ProductWithRelations, ProductFilters } from '../modules/products/products.schema';
 import { Category } from '../modules/categories/categories.schema';
 import { useAuth } from '../contexts/AuthContext';
-import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 
 export default function ProductsList() {
@@ -126,8 +125,6 @@ export default function ProductsList() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navbar />
-
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Products Catalog</h1>
