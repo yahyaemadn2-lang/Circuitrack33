@@ -1,5 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { getOrdersByUserId } from '../modules/orders/orders.service';
+import { getWalletByUserId } from '../modules/wallet/wallet.service';
+import { OrderWithItems } from '../modules/orders/orders.schema';
+import { Wallet as WalletType } from '../modules/wallet/wallet.schema';
 import { supabase } from '../lib/supabaseClient';
 import {
   ShoppingBag,
@@ -16,22 +20,6 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
-interface Order {
-  id: string;
-  total_amount: number;
-  status: string;
-  created_at: string;
-  order_items: Array<{
-    id: string;
-    product: {
-      name: string;
-      brand: string;
-    };
-    quantity: number;
-    total_price: number;
-  }>;
-}
-
 interface Favorite {
   id: string;
   product_id: string;
@@ -45,12 +33,6 @@ interface Favorite {
   };
 }
 
-interface WalletData {
-  main_balance: number;
-  cashback_balance: number;
-  penalty_balance: number;
-}
-
 interface Notification {
   id: string;
   title: string;
@@ -62,9 +44,9 @@ interface Notification {
 
 export default function BuyerDashboard() {
   const { user, profile } = useAuth();
-  const [orders, setOrders] = useState<Order[]>([]);
+  const [orders, setOrders] = useState<OrderWithItems[]>([]);
   const [favorites, setFavorites] = useState<Favorite[]>([]);
-  const [wallet, setWallet] = useState<WalletData | null>(null);
+  const [wallet, setWallet] = useState<WalletType | null>(null);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'overview' | 'orders' | 'wishlist' | 'notifications'>('overview');
@@ -76,27 +58,14 @@ export default function BuyerDashboard() {
   }, [user]);
 
   const loadDashboardData = async () => {
+    if (!user) return;
+
     try {
       setLoading(true);
 
-      const [ordersData, favoritesData, walletData, notificationsData] = await Promise.all([
-        supabase
-          .from('orders')
-          .select(`
-            *,
-            order_items (
-              id,
-              quantity,
-              total_price,
-              product:products (
-                name,
-                brand
-              )
-            )
-          `)
-          .eq('user_id', user?.id)
-          .order('created_at', { ascending: false })
-          .limit(5),
+      const [ordersData, walletData, favoritesData, notificationsData] = await Promise.all([
+        getOrdersByUserId(user.id),
+        getWalletByUserId(user.id),
         supabase
           .from('favorites')
           .select(`
@@ -110,24 +79,19 @@ export default function BuyerDashboard() {
               condition
             )
           `)
-          .eq('user_id', user?.id)
+          .eq('user_id', user.id)
           .order('created_at', { ascending: false }),
-        supabase
-          .from('wallets')
-          .select('main_balance, cashback_balance, penalty_balance')
-          .eq('user_id', user?.id)
-          .maybeSingle(),
         supabase
           .from('notifications')
           .select('*')
-          .eq('user_id', user?.id)
+          .eq('user_id', user.id)
           .order('created_at', { ascending: false })
           .limit(5),
       ]);
 
-      if (ordersData.data) setOrders(ordersData.data as any);
+      setOrders(ordersData || []);
+      setWallet(walletData);
       if (favoritesData.data) setFavorites(favoritesData.data as any);
-      if (walletData.data) setWallet(walletData.data);
       if (notificationsData.data) setNotifications(notificationsData.data);
     } catch (error) {
       console.error('Error loading dashboard data:', error);
@@ -167,27 +131,35 @@ export default function BuyerDashboard() {
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'completed':
-        return <CheckCircle className="w-5 h-5 text-green-600" />;
+      case 'pending':
+        return <Clock className="w-5 h-5 text-yellow-600" />;
+      case 'confirmed':
+        return <CheckCircle className="w-5 h-5 text-blue-600" />;
       case 'shipped':
-        return <Truck className="w-5 h-5 text-blue-600" />;
+        return <Truck className="w-5 h-5 text-purple-600" />;
+      case 'delivered':
+        return <CheckCircle className="w-5 h-5 text-green-600" />;
       case 'cancelled':
         return <XCircle className="w-5 h-5 text-red-600" />;
       default:
-        return <Clock className="w-5 h-5 text-yellow-600" />;
+        return <Package className="w-5 h-5 text-gray-600" />;
     }
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'completed':
-        return 'bg-green-100 text-green-800';
-      case 'shipped':
+      case 'pending':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'confirmed':
         return 'bg-blue-100 text-blue-800';
+      case 'shipped':
+        return 'bg-purple-100 text-purple-800';
+      case 'delivered':
+        return 'bg-green-100 text-green-800';
       case 'cancelled':
         return 'bg-red-100 text-red-800';
       default:
-        return 'bg-yellow-100 text-yellow-800';
+        return 'bg-gray-100 text-gray-800';
     }
   };
 
@@ -203,7 +175,7 @@ export default function BuyerDashboard() {
   }
 
   const activeOrdersCount = orders.filter(
-    (o) => o.status === 'pending' || o.status === 'paid' || o.status === 'shipped'
+    (o) => o.status === 'pending' || o.status === 'confirmed' || o.status === 'shipped'
   ).length;
 
   return (
@@ -318,7 +290,11 @@ export default function BuyerDashboard() {
                   ) : (
                     <div className="space-y-3">
                       {orders.slice(0, 3).map((order) => (
-                        <div key={order.id} className="border border-gray-200 rounded-lg p-4">
+                        <Link
+                          key={order.id}
+                          to={`/dashboard/buyer/orders/${order.id}`}
+                          className="block border border-gray-200 rounded-lg p-4 hover:border-blue-600 hover:bg-blue-50 transition-colors"
+                        >
                           <div className="flex items-start justify-between mb-2">
                             <div className="flex items-center gap-2">
                               {getStatusIcon(order.status)}
@@ -335,12 +311,13 @@ export default function BuyerDashboard() {
                             </span>
                           </div>
                           <p className="text-sm text-gray-600 mb-2">
-                            {order.order_items.length} item(s) - {order.total_amount.toFixed(2)} EGP
+                            {order.items?.length || 0} item(s) - {order.currency}{' '}
+                            {order.subtotal.toLocaleString()}
                           </p>
                           <p className="text-xs text-gray-500">
                             {new Date(order.created_at).toLocaleDateString()}
                           </p>
-                        </div>
+                        </Link>
                       ))}
                     </div>
                   )}
@@ -416,7 +393,11 @@ export default function BuyerDashboard() {
                 ) : (
                   <div className="space-y-4">
                     {orders.map((order) => (
-                      <div key={order.id} className="border border-gray-200 rounded-lg p-6">
+                      <Link
+                        key={order.id}
+                        to={`/dashboard/buyer/orders/${order.id}`}
+                        className="block border border-gray-200 rounded-lg p-6 hover:border-blue-600 hover:shadow-md transition-all"
+                      >
                         <div className="flex items-start justify-between mb-4">
                           <div>
                             <div className="flex items-center gap-3 mb-2">
@@ -440,28 +421,18 @@ export default function BuyerDashboard() {
                         </div>
 
                         <div className="border-t pt-4">
-                          <h4 className="font-medium text-gray-900 mb-3">Items:</h4>
-                          <div className="space-y-2">
-                            {order.order_items.map((item) => (
-                              <div key={item.id} className="flex justify-between text-sm">
-                                <span className="text-gray-600">
-                                  {item.product.brand} {item.product.name} x{item.quantity}
-                                </span>
-                                <span className="font-medium text-gray-900">
-                                  {item.total_price.toFixed(2)} EGP
-                                </span>
-                              </div>
-                            ))}
-                          </div>
+                          <h4 className="font-medium text-gray-900 mb-3">
+                            {order.items?.length || 0} item(s)
+                          </h4>
 
-                          <div className="border-t mt-4 pt-4 flex justify-between items-center">
+                          <div className="flex justify-between items-center">
                             <span className="font-bold text-gray-900">Total:</span>
                             <span className="text-xl font-bold text-blue-600">
-                              {order.total_amount.toFixed(2)} EGP
+                              {order.currency} {order.subtotal.toLocaleString()}
                             </span>
                           </div>
                         </div>
-                      </div>
+                      </Link>
                     ))}
                   </div>
                 )}

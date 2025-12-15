@@ -9,6 +9,7 @@ import ProductsList from '../pages/ProductsList';
 import ProductDetails from '../pages/ProductDetails';
 import Cart from '../pages/Cart';
 import Checkout from '../pages/Checkout';
+import OrderDetails from '../pages/OrderDetails';
 import BuyerDashboard from '../pages/BuyerDashboard';
 import VendorDashboard from '../pages/VendorDashboard';
 import AdminDashboard from '../pages/AdminDashboard';
@@ -25,7 +26,14 @@ export default function AppRoutes() {
       <Route path="/products/:id" element={<ProductDetails />} />
 
       <Route path="/cart" element={<Cart />} />
-      <Route path="/checkout" element={<Checkout />} />
+      <Route
+        path="/checkout"
+        element={
+          <ProtectedRoute requiredRole="buyer">
+            <Checkout />
+          </ProtectedRoute>
+        }
+      />
 
       <Route
         path="/dashboard/buyer"
@@ -34,6 +42,14 @@ export default function AppRoutes() {
             <DashboardLayout>
               <BuyerDashboard />
             </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/dashboard/buyer/orders/:id"
+        element={
+          <ProtectedRoute requiredRole="buyer">
+            <OrderDetails />
           </ProtectedRoute>
         }
       />

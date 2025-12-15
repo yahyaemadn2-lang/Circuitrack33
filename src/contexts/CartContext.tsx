@@ -2,6 +2,15 @@ import { createContext, useContext, useEffect, useState } from 'react';
 import { useAuth } from './AuthContext';
 import { supabase } from '../lib/supabaseClient';
 
+interface CartProduct {
+  id: string;
+  name: string;
+  slug: string;
+  price: number;
+  condition: string;
+  vendor_id: string;
+}
+
 interface CartItem {
   id: string;
   user_id: string;
@@ -9,23 +18,25 @@ interface CartItem {
   quantity: number;
   created_at: string;
   updated_at: string;
-  product: {
-    id: string;
-    name: string;
-    brand: string;
-    model: string;
-    base_price: number;
-    condition: string;
-    vendor_id: string;
-  };
+  product: CartProduct;
+}
+
+interface LocalCartItem {
+  productId: string;
+  name: string;
+  price: number;
+  quantity: number;
+  vendorId: string;
+  slug: string;
 }
 
 interface CartContextType {
   items: CartItem[];
+  localItems: LocalCartItem[];
   loading: boolean;
   itemCount: number;
   subtotal: number;
-  addItem: (productId: string, quantity?: number) => Promise<void>;
+  addItem: (product: CartProduct, quantity?: number) => Promise<void>;
   removeItem: (cartItemId: string) => Promise<void>;
   updateQuantity: (cartItemId: string, quantity: number) => Promise<void>;
   clearCart: () => Promise<void>;
@@ -34,19 +45,71 @@ interface CartContextType {
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
+const LOCAL_STORAGE_KEY = 'circuitrack_cart';
+
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
   const [items, setItems] = useState<CartItem[]>([]);
+  const [localItems, setLocalItems] = useState<LocalCartItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (user) {
       refreshCart();
+      migrateLocalCartToServer();
     } else {
       setItems([]);
+      loadLocalCart();
       setLoading(false);
     }
   }, [user]);
+
+  const loadLocalCart = () => {
+    try {
+      const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
+      if (stored) {
+        setLocalItems(JSON.parse(stored));
+      }
+    } catch (error) {
+      console.error('Error loading local cart:', error);
+      setLocalItems([]);
+    }
+  };
+
+  const saveLocalCart = (items: LocalCartItem[]) => {
+    try {
+      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(items));
+      setLocalItems(items);
+    } catch (error) {
+      console.error('Error saving local cart:', error);
+    }
+  };
+
+  const migrateLocalCartToServer = async () => {
+    if (!user) return;
+
+    try {
+      const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
+      if (!stored) return;
+
+      const localItems: LocalCartItem[] = JSON.parse(stored);
+      if (localItems.length === 0) return;
+
+      for (const item of localItems) {
+        await supabase.from('cart_items').insert({
+          user_id: user.id,
+          product_id: item.productId,
+          quantity: item.quantity,
+        });
+      }
+
+      localStorage.removeItem(LOCAL_STORAGE_KEY);
+      setLocalItems([]);
+      await refreshCart();
+    } catch (error) {
+      console.error('Error migrating cart:', error);
+    }
+  };
 
   const refreshCart = async () => {
     if (!user) {
@@ -59,18 +122,19 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       setLoading(true);
       const { data, error } = await supabase
         .from('cart_items')
-        .select(`
+        .select(
+          `
           *,
           product:products (
             id,
             name,
-            brand,
-            model,
-            base_price,
+            slug,
+            price,
             condition,
             vendor_id
           )
-        `)
+        `
+        )
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
@@ -85,20 +149,40 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const addItem = async (productId: string, quantity: number = 1) => {
+  const addItem = async (product: CartProduct, quantity: number = 1) => {
     if (!user) {
-      throw new Error('User must be logged in to add items to cart');
+      const existing = localItems.find((item) => item.productId === product.id);
+
+      if (existing) {
+        const updated = localItems.map((item) =>
+          item.productId === product.id
+            ? { ...item, quantity: item.quantity + quantity }
+            : item
+        );
+        saveLocalCart(updated);
+      } else {
+        const newItem: LocalCartItem = {
+          productId: product.id,
+          name: product.name,
+          price: product.price,
+          quantity,
+          vendorId: product.vendor_id,
+          slug: product.slug,
+        };
+        saveLocalCart([...localItems, newItem]);
+      }
+      return;
     }
 
     try {
-      const existingItem = items.find((item) => item.product_id === productId);
+      const existingItem = items.find((item) => item.product_id === product.id);
 
       if (existingItem) {
         await updateQuantity(existingItem.id, existingItem.quantity + quantity);
       } else {
         const { error } = await supabase.from('cart_items').insert({
           user_id: user.id,
-          product_id: productId,
+          product_id: product.id,
           quantity,
         });
 
@@ -113,7 +197,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   const removeItem = async (cartItemId: string) => {
     if (!user) {
-      throw new Error('User must be logged in');
+      const updated = localItems.filter((item) => item.productId !== cartItemId);
+      saveLocalCart(updated);
+      return;
     }
 
     try {
@@ -134,7 +220,16 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   const updateQuantity = async (cartItemId: string, quantity: number) => {
     if (!user) {
-      throw new Error('User must be logged in');
+      if (quantity < 1) {
+        const updated = localItems.filter((item) => item.productId !== cartItemId);
+        saveLocalCart(updated);
+      } else {
+        const updated = localItems.map((item) =>
+          item.productId === cartItemId ? { ...item, quantity } : item
+        );
+        saveLocalCart(updated);
+      }
+      return;
     }
 
     if (quantity < 1) {
@@ -152,9 +247,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       if (error) throw error;
 
       setItems((prevItems) =>
-        prevItems.map((item) =>
-          item.id === cartItemId ? { ...item, quantity } : item
-        )
+        prevItems.map((item) => (item.id === cartItemId ? { ...item, quantity } : item))
       );
     } catch (error: any) {
       console.error('Error updating quantity:', error);
@@ -164,7 +257,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   const clearCart = async () => {
     if (!user) {
-      throw new Error('User must be logged in');
+      saveLocalCart([]);
+      return;
     }
 
     try {
@@ -182,14 +276,17 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const itemCount = items.reduce((total, item) => total + item.quantity, 0);
-  const subtotal = items.reduce(
-    (total, item) => total + Number(item.product.base_price) * item.quantity,
-    0
-  );
+  const itemCount = user
+    ? items.reduce((total, item) => total + item.quantity, 0)
+    : localItems.reduce((total, item) => total + item.quantity, 0);
+
+  const subtotal = user
+    ? items.reduce((total, item) => total + Number(item.product.price) * item.quantity, 0)
+    : localItems.reduce((total, item) => total + item.price * item.quantity, 0);
 
   const value = {
     items,
+    localItems,
     loading,
     itemCount,
     subtotal,

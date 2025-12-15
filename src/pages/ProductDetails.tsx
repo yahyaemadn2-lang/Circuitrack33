@@ -13,6 +13,7 @@ import {
 import { getProductById, getRelatedProducts } from '../modules/products/products.service';
 import { ProductWithRelations } from '../modules/products/products.schema';
 import { useAuth } from '../contexts/AuthContext';
+import { useCart } from '../contexts/CartContext';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 
@@ -20,12 +21,14 @@ export default function ProductDetails() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { isBuyer, user } = useAuth();
+  const { addItem } = useCart();
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [product, setProduct] = useState<ProductWithRelations | null>(null);
   const [relatedProducts, setRelatedProducts] = useState<ProductWithRelations[]>([]);
   const [quantity, setQuantity] = useState(1);
+  const [addingToCart, setAddingToCart] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -59,10 +62,38 @@ export default function ProductDetails() {
     }
   };
 
-  const handleAddToCart = () => {
-    if (!user) {
-      navigate('/login');
-      return;
+  const handleAddToCart = async () => {
+    if (!product) return;
+
+    setAddingToCart(true);
+    try {
+      await addItem(
+        {
+          id: product.id,
+          name: product.name,
+          slug: product.slug,
+          price: product.price,
+          condition: product.condition,
+          vendor_id: product.vendor_id,
+        },
+        quantity
+      );
+
+      if (user) {
+        navigate('/cart');
+      } else {
+        const goToCart = window.confirm(
+          'Product added to cart! Would you like to view your cart?'
+        );
+        if (goToCart) {
+          navigate('/cart');
+        }
+      }
+    } catch (error) {
+      console.error('Error adding to cart:', error);
+      alert('Failed to add product to cart. Please try again.');
+    } finally {
+      setAddingToCart(false);
     }
   };
 
@@ -210,10 +241,11 @@ export default function ProductDetails() {
 
                 <button
                   onClick={handleAddToCart}
-                  className="w-full px-6 py-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center justify-center gap-2"
+                  disabled={addingToCart}
+                  className="w-full px-6 py-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <ShoppingCart className="w-5 h-5" />
-                  Add to Cart
+                  {addingToCart ? 'Adding...' : 'Add to Cart'}
                 </button>
 
                 <div className="grid grid-cols-2 gap-3">
