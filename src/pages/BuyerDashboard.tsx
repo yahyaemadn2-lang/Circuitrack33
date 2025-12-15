@@ -178,6 +178,10 @@ export default function BuyerDashboard() {
     (o) => o.status === 'pending' || o.status === 'confirmed' || o.status === 'shipped'
   ).length;
 
+  const totalSpent = orders
+    .filter((o) => o.status !== 'cancelled')
+    .reduce((sum, order) => sum + Number(order.subtotal || 0), 0);
+
   return (
     <div className="min-h-screen">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -197,18 +201,20 @@ export default function BuyerDashboard() {
 
           <div className="bg-white rounded-lg shadow-sm p-6">
             <div className="flex items-center justify-between mb-4">
-              <Package className="w-8 h-8 text-green-600" />
+              <Package className="w-8 h-8 text-yellow-600" />
               <span className="text-2xl font-bold text-gray-900">{activeOrdersCount}</span>
             </div>
-            <h3 className="text-gray-600 font-medium">Active Orders</h3>
+            <h3 className="text-gray-600 font-medium">Open Orders</h3>
           </div>
 
           <div className="bg-white rounded-lg shadow-sm p-6">
             <div className="flex items-center justify-between mb-4">
-              <Heart className="w-8 h-8 text-red-600" />
-              <span className="text-2xl font-bold text-gray-900">{favorites.length}</span>
+              <Wallet className="w-8 h-8 text-green-600" />
+              <span className="text-2xl font-bold text-gray-900">
+                {totalSpent.toFixed(2)}
+              </span>
             </div>
-            <h3 className="text-gray-600 font-medium">Wishlist Items</h3>
+            <h3 className="text-gray-600 font-medium">Total Spent (EGP)</h3>
           </div>
 
           <div className="bg-white rounded-lg shadow-sm p-6">
@@ -288,8 +294,9 @@ export default function BuyerDashboard() {
                       </Link>
                     </div>
                   ) : (
-                    <div className="space-y-3">
-                      {orders.slice(0, 3).map((order) => (
+                    <>
+                      <div className="space-y-3">
+                        {orders.slice(0, 5).map((order) => (
                         <Link
                           key={order.id}
                           to={`/dashboard/buyer/orders/${order.id}`}
@@ -318,8 +325,17 @@ export default function BuyerDashboard() {
                             {new Date(order.created_at).toLocaleDateString()}
                           </p>
                         </Link>
-                      ))}
-                    </div>
+                        ))}
+                      </div>
+                      {orders.length > 5 && (
+                        <button
+                          onClick={() => setActiveTab('orders')}
+                          className="mt-3 w-full py-2 text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors"
+                        >
+                          View All Orders ({orders.length})
+                        </button>
+                      )}
+                    </>
                   )}
                 </div>
 
@@ -353,6 +369,17 @@ export default function BuyerDashboard() {
                         <span className="font-medium text-gray-900">My Wallet</span>
                       </div>
                     </Link>
+                    <button
+                      onClick={() => setActiveTab('orders')}
+                      className="block w-full p-4 border border-gray-200 rounded-lg hover:border-blue-600 hover:bg-blue-50 transition-colors text-left"
+                    >
+                      <div className="flex items-center gap-3">
+                        <Package className="w-5 h-5 text-blue-600" />
+                        <span className="font-medium text-gray-900">
+                          View All Orders
+                        </span>
+                      </div>
+                    </button>
                     <button
                       onClick={() => setActiveTab('wishlist')}
                       className="block w-full p-4 border border-gray-200 rounded-lg hover:border-blue-600 hover:bg-blue-50 transition-colors text-left"
