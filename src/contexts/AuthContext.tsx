@@ -142,13 +142,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (data.user) {
         await fetchUserProfile(data.user.id);
+      } else {
+        setLoading(false);
       }
 
       return {};
     } catch (error: any) {
-      return { error: error.message || 'Login failed' };
-    } finally {
       setLoading(false);
+      return { error: error.message || 'Login failed' };
     }
   };
 

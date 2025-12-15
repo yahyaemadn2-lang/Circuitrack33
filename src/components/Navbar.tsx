@@ -26,7 +26,7 @@ export default function Navbar() {
             <img
               src="/logo_circuit_rack.jpg"
               alt="CircuitRack Logo"
-              className="h-8 sm:h-10 w-auto object-contain"
+              className="h-10 sm:h-12 w-auto object-contain"
             />
           </Link>
 

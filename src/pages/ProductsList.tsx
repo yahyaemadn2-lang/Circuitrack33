@@ -278,14 +278,26 @@ export default function ProductsList() {
         )}
 
         {!loading && !error && result && result.products.length === 0 && (
-          <div className="text-center py-12">
-            <p className="text-gray-600 text-lg mb-4">No products found</p>
-            <button
-              onClick={handleClearFilters}
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              Clear Filters
-            </button>
+          <div className="text-center py-16 bg-white rounded-lg shadow-sm border border-gray-200">
+            <div className="text-gray-400 text-6xl mb-4">📦</div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              {searchQuery || selectedCategory || selectedCondition || minPrice || maxPrice
+                ? 'No products match your filters'
+                : 'This feature is under development.'}
+            </h3>
+            <p className="text-gray-600 mb-6">
+              {searchQuery || selectedCategory || selectedCondition || minPrice || maxPrice
+                ? 'Try adjusting your search or filter criteria.'
+                : 'Product catalog will be available soon.'}
+            </p>
+            {(searchQuery || selectedCategory || selectedCondition || minPrice || maxPrice) && (
+              <button
+                onClick={handleClearFilters}
+                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Clear Filters
+              </button>
+            )}
           </div>
         )}
 
