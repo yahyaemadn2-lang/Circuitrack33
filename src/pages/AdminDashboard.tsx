@@ -16,7 +16,11 @@ import {
   Ban,
   Wallet as WalletIcon,
   Gift,
+  Building,
+  Shield,
 } from 'lucide-react';
+import AdminCRM from '../components/AdminCRM';
+import AdminCompliance from '../components/AdminCompliance';
 
 interface User {
   id: string;
@@ -93,7 +97,7 @@ export default function AdminDashboard() {
   });
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<
-    'overview' | 'users' | 'vendors' | 'products' | 'wallets'
+    'overview' | 'users' | 'vendors' | 'products' | 'wallets' | 'crm' | 'compliance'
   >('overview');
 
   useEffect(() => {
@@ -369,6 +373,28 @@ export default function AdminDashboard() {
                 }`}
               >
                 Wallets
+              </button>
+              <button
+                onClick={() => setActiveTab('crm')}
+                className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors ${
+                  activeTab === 'crm'
+                    ? 'border-blue-600 text-blue-600'
+                    : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
+                }`}
+              >
+                <Building className="w-4 h-4 inline mr-2" />
+                CRM
+              </button>
+              <button
+                onClick={() => setActiveTab('compliance')}
+                className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors ${
+                  activeTab === 'compliance'
+                    ? 'border-blue-600 text-blue-600'
+                    : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
+                }`}
+              >
+                <Shield className="w-4 h-4 inline mr-2" />
+                Compliance
               </button>
             </nav>
           </div>
@@ -802,6 +828,10 @@ export default function AdminDashboard() {
                 </div>
               </div>
             )}
+
+            {activeTab === 'crm' && <AdminCRM />}
+
+            {activeTab === 'compliance' && <AdminCompliance />}
           </div>
         </div>
       </div>

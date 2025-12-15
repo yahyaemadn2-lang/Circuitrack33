@@ -60,6 +60,7 @@ export function RegisterForm({ lang }: RegisterFormProps) {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [role, setRole] = useState<'buyer' | 'vendor'>('buyer');
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { register, user, profile, login } = useAuth();
@@ -88,6 +89,11 @@ export function RegisterForm({ lang }: RegisterFormProps) {
       return;
     }
 
+    if (!acceptedTerms) {
+      setError('You must accept the terms and conditions to register');
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -97,6 +103,16 @@ export function RegisterForm({ lang }: RegisterFormProps) {
         setError(result.error);
         setIsLoading(false);
       } else {
+        if (result.user) {
+          const { supabase } = await import('../lib/supabase');
+          await supabase.from('user_agreements').insert({
+            user_id: result.user.id,
+            agreement_type: 'registration_terms',
+            accepted_at: new Date().toISOString(),
+            metadata: { version: 'v1.0' },
+          });
+        }
+
         const loginResult = await login(email, password);
         if (loginResult.error) {
           setError(loginResult.error);
@@ -225,9 +241,31 @@ export function RegisterForm({ lang }: RegisterFormProps) {
             </div>
           </div>
 
+          <div className="flex items-start">
+            <input
+              id="terms"
+              type="checkbox"
+              checked={acceptedTerms}
+              onChange={(e) => setAcceptedTerms(e.target.checked)}
+              className="mt-1 h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
+              required
+            />
+            <label htmlFor="terms" className="ml-2 block text-sm text-gray-700">
+              I confirm that I am creating this account for business (B2B) use and agree to CircuitRack{' '}
+              <a href="#" className="text-green-600 hover:text-green-700 font-medium">
+                Terms of Use
+              </a>{' '}
+              and{' '}
+              <a href="#" className="text-green-600 hover:text-green-700 font-medium">
+                Privacy Policy
+              </a>
+              .
+            </label>
+          </div>
+
           <button
             type="submit"
-            disabled={isLoading}
+            disabled={isLoading || !acceptedTerms}
             className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
           >
             {isLoading ? t.registering : t.registerButton}
