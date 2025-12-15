@@ -20,15 +20,14 @@ export default function Navbar() {
         <div className="flex justify-between items-center h-16">
           <Link
             to="/"
-            className="flex items-center gap-2 text-xl font-bold text-gray-900 hover:text-blue-600 transition-colors"
+            className="flex items-center hover:opacity-80 transition-opacity"
             aria-label="CircuitRack Home"
           >
             <img
               src="/logo_circuit_rack.jpg"
               alt="CircuitRack Logo"
-              className="h-8 w-auto object-contain"
+              className="h-8 sm:h-10 w-auto object-contain"
             />
-            <span>CircuitRack</span>
           </Link>
 
           <div className="flex items-center gap-4">
