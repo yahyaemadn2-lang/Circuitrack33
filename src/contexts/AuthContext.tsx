@@ -90,11 +90,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (fetchError && fetchError.code !== 'PGRST116') {
         console.error('Error fetching user profile:', fetchError);
         setProfile(null);
+        setLoading(false);
         return;
       }
 
       if (existingProfile) {
         setProfile(existingProfile);
+        setLoading(false);
         return;
       }
 
@@ -117,9 +119,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } else {
         setProfile(newProfile);
       }
+      setLoading(false);
     } catch (error) {
       console.error('Unexpected error in fetchUserProfile:', error);
       setProfile(null);
+      setLoading(false);
     }
   };
 
