@@ -14,6 +14,8 @@ import BuyerDashboard from '../pages/BuyerDashboard';
 import BuyerWallet from '../pages/BuyerWallet';
 import VendorDashboard from '../pages/VendorDashboard';
 import AdminDashboard from '../pages/AdminDashboard';
+import Auctions from '../pages/Auctions';
+import SecondaryMarket from '../pages/SecondaryMarket';
 
 export default function AppRoutes() {
   return (
@@ -25,6 +27,9 @@ export default function AppRoutes() {
 
       <Route path="/products" element={<ProductsList />} />
       <Route path="/products/:id" element={<ProductDetails />} />
+
+      <Route path="/auctions" element={<Auctions />} />
+      <Route path="/secondary-market" element={<SecondaryMarket />} />
 
       <Route path="/cart" element={<Cart />} />
       <Route

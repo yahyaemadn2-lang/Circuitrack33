@@ -11,7 +11,9 @@ import {
   Trash2,
   Eye,
   X,
+  Tag,
 } from 'lucide-react';
+import VendorOffersManagement from '../components/VendorOffersManagement';
 
 interface Product {
   id: string;
@@ -55,7 +57,7 @@ export default function VendorDashboard() {
   const [orders, setOrders] = useState<OrderItem[]>([]);
   const [vendorData, setVendorData] = useState<VendorData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'overview' | 'products' | 'orders'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'products' | 'orders' | 'offers'>('overview');
   const [showProductModal, setShowProductModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [categories, setCategories] = useState<Array<{ id: string; name: string }>>([]);
@@ -339,6 +341,19 @@ export default function VendorDashboard() {
                 Products ({products.length})
               </button>
               <button
+                onClick={() => setActiveTab('offers')}
+                className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors ${
+                  activeTab === 'offers'
+                    ? 'border-blue-600 text-blue-600'
+                    : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <Tag className="w-4 h-4" />
+                  Offers
+                </div>
+              </button>
+              <button
                 onClick={() => setActiveTab('orders')}
                 className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors ${
                   activeTab === 'orders'
@@ -511,6 +526,10 @@ export default function VendorDashboard() {
                   </div>
                 )}
               </div>
+            )}
+
+            {activeTab === 'offers' && vendorData && (
+              <VendorOffersManagement vendorId={vendorData.id} />
             )}
 
             {activeTab === 'orders' && (

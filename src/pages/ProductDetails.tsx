@@ -15,6 +15,7 @@ import { ProductWithRelations } from '../modules/products/products.schema';
 import { useAuth } from '../contexts/AuthContext';
 import { useCart } from '../contexts/CartContext';
 import Footer from '../components/Footer';
+import MakeOfferModal from '../components/MakeOfferModal';
 
 export default function ProductDetails() {
   const { id } = useParams<{ id: string }>();
@@ -28,6 +29,7 @@ export default function ProductDetails() {
   const [relatedProducts, setRelatedProducts] = useState<ProductWithRelations[]>([]);
   const [quantity, setQuantity] = useState(1);
   const [addingToCart, setAddingToCart] = useState(false);
+  const [showOfferModal, setShowOfferModal] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -108,6 +110,7 @@ export default function ProductDetails() {
       navigate('/login');
       return;
     }
+    setShowOfferModal(true);
   };
 
   if (loading) {
@@ -352,6 +355,19 @@ export default function ProductDetails() {
           </div>
         )}
       </div>
+
+      {product && user && isBuyer && (
+        <MakeOfferModal
+          isOpen={showOfferModal}
+          onClose={() => setShowOfferModal(false)}
+          productId={product.id}
+          productName={product.name}
+          vendorId={product.vendor_id}
+          vendorUserId={product.vendor?.user_id}
+          currentPrice={product.price}
+          buyerId={user.id}
+        />
+      )}
 
       <Footer />
     </div>

@@ -33,6 +33,12 @@ export default function Navbar() {
             <Link to="/products" className="text-sm text-gray-700 hover:text-gray-900">
               Products
             </Link>
+            <Link to="/auctions" className="text-sm text-gray-700 hover:text-gray-900">
+              Auctions
+            </Link>
+            <Link to="/secondary-market" className="text-sm text-gray-700 hover:text-gray-900">
+              Resale Market
+            </Link>
 
             <Link to="/cart" className="relative p-2 text-gray-700 hover:text-gray-900">
               <ShoppingCart className="w-5 h-5" />
